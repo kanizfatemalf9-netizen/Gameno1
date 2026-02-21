@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>3 Glass Marble · Betting Game</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background: linear-gradient(145deg, #0b1622 0%, #1a2a3a 100%);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-family: 'Segoe UI', Roboto, system-ui, sans-serif;
+      padding: 12px;
+      margin: 0;
+    }
+
+    .game-wrapper {
+      max-width: 500px;
+      width: 100%;
+      background: rgba(10, 25, 40, 0.7);
+      backdrop-filter: blur(8px);
+      border-radius: 42px;
+      padding: 24px 16px 32px;
+      box-shadow: 0 25px 40px -10px rgba(0, 0, 0, 0.7), inset 0 1px 2px rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 215, 0, 0.15);
+    }
+
+    h1 {
+      text-align: center;
+      font-weight: 500;
+      letter-spacing: 1px;
+      font-size: 2rem;
+      background: linear-gradient(135deg, #f5e7b2, #ffb347);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 8px;
+      filter: drop-shadow(0 4px 6px black);
+    }
+
+    .balance-panel {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #0a121f;
+      padding: 14px 18px;
+      border-radius: 200px;
+      border: 1px solid #ffd96655;
+      margin-bottom: 28px;
+      box-shadow: inset 0 3px 8px #00000055, 0 5px 12px black;
+    }
+
+    .balance-label {
+      font-weight: 400;
+      color: #bcd0f7;
+      font-size: 1.1rem;
+    }
+
+    .balance-amount {
+      font-weight: 700;
+      font-size: 1.8rem;
+      background: linear-gradient(180deg, #fff3c9, #f8c150);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      line-height: 1;
+    }
+
+    .table {
+      position: relative;
+      width: 100%;
+      max-width: 400px;
+      margin: 0 auto 20px;
+      height: 200px;
+      background: #3e2b15;
+      background-image: radial-gradient(circle at 20% 30%, #6b4a2a, #2f1d0c);
+      border-radius: 120px 120px 40px 40px;
+      box-shadow: inset 0 -8px 8px rgba(0,0,0,0.8), inset 0 8px 10px #b87c4c55, 0 18px 25px black;
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-around;
+      padding: 0 15px 20px;
+      border-bottom: 5px solid #95642c;
+    }
+
+    .glass {
+      width: 70px;
+      height: 100px;
+      background: #2c3e50;
+      background-image: linear-gradient(145deg, #3a4e62, #1a2a3a);
+      border: 2px solid #5d3a1a;
+      border-top: 1px solid #b57c48;
+      border-radius: 0 0 50px 50px;
+      box-shadow: 0 20px 15px -8px black, inset 0 -5px 10px #00000066;
+      position: relative;
+      transition: transform 0.3s cubic-bezier(0.25, 1.2, 0.5, 1), background 0.2s;
+      transform-origin: bottom center;
+      cursor: pointer;
+      opacity: 1;
+      overflow: hidden; /* মার্বেল যেন গ্লাসের বাইরে না দেখা যায় */
+    }
+
+    .glass::before {
+      content: "";
+      position: absolute;
+      top: -4px;
+      left: 15%;
+      width: 70%;
+      height: 8px;
+      background: #b87c4c;
+      border-radius: 50%;
+      filter: blur(2px);
+      opacity: 0.7;
+      z-index: 2;
+    }
+
+    .glass.move {
+      transform: translateY(-12px) scale(1.02);
+      box-shadow: 0 25px 20px -8px black;
+    }
+
+    .glass.black {
+      background: #1e2b38;
+      border-color: #7a4f24;
+    }
+
+    .glass.lift {
+      transform: translateY(-60px);
+      transition: transform 0.4s ease-out;
+    }
+
+    .marble {
+      width: 28px;
+      height: 28px;
+      background: radial-gradient(circle at 35% 35%, #f9f3c5, #3b82f6 85%);
+      border-radius: 50%;
+      position: absolute;
+      bottom: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      box-shadow: 0 0 0 2px rgba(255,255,255,0.6), 0 8px 15px black;
+      display: none; /* ডিফল্টভাবে একদম লুকানো */
+      z-index: 5;
+    }
+
+    /* যখন গ্লাস তোলা হবে তখনই কেবল মার্বেল দেখা যাবে */
+    .glass.lift .marble {
+      display: block !important;
+    }
+
+    .controls {
+      background: #0b1a2bdd;
+      border-radius: 40px;
+      padding: 20px 12px 18px;
+      backdrop-filter: blur(10px);
+      border: 1px solid #f3b33d55;
+    }
+
+    .bet-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      color: #fee3b5;
+      font-weight: 500;
+      padding: 0 8px;
+    }
+
+    input[type=range] {
+      width: 100%;
+      height: 8px;
+      background: linear-gradient(90deg, #ffb155, #d4af37);
+      border-radius: 20px;
+      -webkit-appearance: none;
+    }
+
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 22px;
+      height: 22px;
+      background: white;
+      border-radius: 50%;
+      border: 2px solid #c99c00;
+      box-shadow: 0 2px 10px gold;
+      cursor: pointer;
+    }
+
+    .action-buttons {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      margin: 15px 0 10px;
+    }
+
+    .primary-btn {
+      background: linear-gradient(145deg, #28a745, #166b34);
+      border: none;
+      padding: 14px 30px;
+      border-radius: 60px;
+      font-weight: 700;
+      font-size: 1.3rem;
+      color: white;
+      box-shadow: 0 10px 15px -5px #0f2b1a, 0 0 0 1px #7ef0a2 inset;
+      cursor: pointer;
+      transition: 0.15s;
+      flex: 1;
+      letter-spacing: 0.5px;
+    }
+
+    .primary-btn:disabled {
+      opacity: 0.4;
+      box-shadow: none;
+      filter: grayscale(0.6);
+    }
+
+    .choice-row {
+      display: flex;
+      justify-content: center;
+      gap: 18px;
+      margin: 12px 0 10px;
+    }
+
+    .choice-btn {
+      background: #203b54;
+      border: none;
+      width: 65px;
+      height: 65px;
+      border-radius: 40px;
+      font-size: 2rem;
+      font-weight: 700;
+      color: #ffd966;
+      box-shadow: 0 8px 0 #0d1c29, 0 5px 20px black;
+      cursor: pointer;
+      transition: 0.06s linear;
+      border: 1px solid #ffbf4b;
+    }
+
+    .choice-btn:active {
+      transform: translateY(5px);
+      box-shadow: 0 3px 0 #0d1c29;
+    }
+
+    .result {
+      text-align: center;
+      font-size: 1.5rem;
+      min-height: 2.6rem;
+      font-weight: 600;
+      text-shadow: 0 3px 5px black;
+      background: #0f1d2b80;
+      padding: 10px 0;
+      border-radius: 60px;
+      margin-top: 15px;
+      color: #fedb8f;
+    }
+
+    .small-note {
+      text-align: center;
+      color: #7f95b0;
+      font-size: 0.9rem;
+      margin-top: 12px;
+    }
+  </style>
+</head>
+<body>
+<div class="game-wrapper">
+  <h1>✧ ɢʟᴀss ᴍᴀʀʙʟᴇ ✧</h1>
+
+  <div class="balance-panel">
+    <span class="balance-label">💰 BALANCE</span>
+    <span class="balance-amount" id="balance">1000</span>
+  </div>
+
+  <!-- game table -->
+  <div class="table" id="table">
+    <div class="glass" id="glass0"><div class="marble"></div></div>
+    <div class="glass" id="glass1"><div class="marble"></div></div>
+    <div class="glass" id="glass2"><div class="marble"></div></div>
+  </div>
+
+  <!-- controls -->
+  <div class="controls">
+    <div class="bet-row">
+      <span>🎲 BET  <span id="betValue">50</span> ৳</span>
+      <span style="color: #ffc107;">min 5  max 10000</span>
+    </div>
+    <input type="range" id="betRange" min="5" max="10000" value="50" step="1">
+
+    <div class="action-buttons">
+      <button class="primary-btn" id="startBtn">⟳ SHUFFLE</button>
+    </div>
+
+    <!-- hidden choice buttons (shown after shuffle) -->
+    <div class="choice-row" id="choices" style="display: none;">
+      <button class="choice-btn" data-pick="0">1</button>
+      <button class="choice-btn" data-pick="1">2</button>
+      <button class="choice-btn" data-pick="2">3</button>
+    </div>
+
+    <div class="result" id="result"></div>
+    <div class="small-note">⬆️ pick a glass after shuffle</div>
+  </div>
+</div>
+
+<script>
+  (function() {
+    // ---------- DOM elements ----------
+    const table = document.getElementById('table');
+    const balanceEl = document.getElementById('balance');
+    const betRange = document.getElementById('betRange');
+    const betValue = document.getElementById('betValue');
+    const startBtn = document.getElementById('startBtn');
+    const resultEl = document.getElementById('result');
+    const choicesDiv = document.getElementById('choices');
+    const choiceBtns = document.querySelectorAll('.choice-btn');
+
+    // helper to get fresh glass list
+    function getGlasses() {
+      return [document.getElementById('glass0'), document.getElementById('glass1'), document.getElementById('glass2')];
+    }
+
+    // ---------- state ----------
+    let balance = 1000;
+    let shuffling = false;
+    let shuffleInterval = null;
+    let secretIndex = 0; // কোথায় মার্বেল আছে তা ট্র্যাক রাখে
+
+    // ---------- মার্বেল রিসেট (শুধুমাত্র লজিকের জন্য, দৃশ্যমান নয়) ----------
+    function setMarblePosition() {
+      const glasses = getGlasses();
+      // সব মার্বেল লুকাও
+      glasses.forEach(g => {
+        const marble = g.querySelector('.marble');
+        marble.style.display = 'none';
+      });
+      // নতুন র্যান্ডম পজিশন সেট করো (শুধু লোকেশন মনে রাখো)
+      secretIndex = Math.floor(Math.random() * 3);
+      // শুধু সেট করছি, display block দিচ্ছি না - কারণ CSS এ .lift .marble দেখাবে
+      // আমরা শুধু লোকেশন জানার জন্য একটা উপায় রাখি
+    }
+
+    // মার্বেলের অবস্থান চেক করার ফাংশন
+    function hasMarble(glass) {
+      const glasses = getGlasses();
+      const index = glasses.indexOf(glass);
+      return index === secretIndex;
+    }
+
+    // initial setup
+    setMarblePosition();
+
+    // ---------- display balance & bet ----------
+    function updateBalanceUI() {
+      balanceEl.textContent = balance;
+    }
+
+    betRange.addEventListener('input', function(e) {
+      betValue.textContent = e.target.value;
+    });
+
+    // ---------- clean up classes & prepare for new round ----------
+    function resetGameState() {
+      if (shuffleInterval) {
+        clearInterval(shuffleInterval);
+        shuffleInterval = null;
+      }
+      shuffling = false;
+      const glasses = getGlasses();
+      glasses.forEach(g => {
+        g.classList.remove('move', 'black', 'lift');
+        // মার্বেলের style.display সরাসরি না বরং CSS ক্লাসের ওপর নির্ভর করছে
+      });
+      startBtn.disabled = false;
+      choicesDiv.style.display = 'none';
+    }
+
+    // ---------- animation: exchange two glasses visually + swap DOM ----------
+    function animateSwap(glassA, glassB) {
+      if (!glassA || !glassB) return;
+      glassA.classList.add('move');
+      glassB.classList.add('move');
+      setTimeout(() => {
+        glassA.classList.remove('move');
+        glassB.classList.remove('move');
+      }, 280);
+
+      if (glassA === glassB) return;
+      const parent = table;
+      
+      // swap করার সময় secretIndex আপডেট করতে হবে
+      const glasses = getGlasses();
+      const indexA = glasses.indexOf(glassA);
+      const indexB = glasses.indexOf(glassB);
+      
+      // DOM swap
+      if (glassA.compareDocumentPosition(glassB) & Node.DOCUMENT_POSITION_FOLLOWING) {
+        parent.insertBefore(glassB, glassA);
+      } else {
+        parent.insertBefore(glassA, glassB);
+      }
+      
+      // secretIndex আপডেট করি যদি মার্বেল এই গ্লাসদুটোর কোনো একটিতে থাকে
+      if (secretIndex === indexA) {
+        secretIndex = indexB;
+      } else if (secretIndex === indexB) {
+        secretIndex = indexA;
+      }
+    }
+
+    // ---------- SHUFFLE ----------
+    function startShuffle() {
+      if (shuffling) return;
+
+      const betAmount = parseInt(betRange.value, 10);
+      if (betAmount > balance) {
+        resultEl.textContent = '⛔ insufficient balance!';
+        return;
+      }
+      if (betAmount < 5) {
+        resultEl.textContent = 'minimum bet 5 ৳';
+        return;
+      }
+
+      resetGameState();
+
+      resultEl.textContent = `👉 You placed ${betAmount} ৳ bet. Shuffling...`;
+
+      shuffling = true;
+      startBtn.disabled = true;
+      choicesDiv.style.display = 'none';
+
+      const glasses = getGlasses();
+      glasses.forEach(g => {
+        g.classList.remove('black', 'lift');
+      });
+
+      // নতুন রাউন্ডের জন্য মার্বেল পজিশন সেট করি
+      setMarblePosition();
+
+      // perform shuffle
+      let swapCount = 0;
+      const TOTAL_SWAPS = 12;
+
+      shuffleInterval = setInterval(() => {
+        const currentGlasses = getGlasses();
+        if (currentGlasses.length < 3) return;
+
+        let idx1 = Math.floor(Math.random() * 3);
+        let idx2 = Math.floor(Math.random() * 3);
+        while (idx1 === idx2) idx2 = Math.floor(Math.random() * 3);
+
+        animateSwap(currentGlasses[idx1], currentGlasses[idx2]);
+
+        swapCount++;
+        if (swapCount >= TOTAL_SWAPS) {
+          clearInterval(shuffleInterval);
+          shuffleInterval = null;
+
+          const finalGlasses = getGlasses();
+          finalGlasses.forEach(g => {
+            g.classList.add('black');
+          });
+
+          shuffling = false;
+          choicesDiv.style.display = 'flex';
+          resultEl.textContent = '👇 choose a glass (1,2,3)';
+          startBtn.disabled = true;
+        }
+      }, 330);
+    }
+
+    startBtn.addEventListener('click', startShuffle);
+
+    // ---------- handle player pick ----------
+    function onPick(event) {
+      const btn = event.currentTarget;
+      const pickIndex = parseInt(btn.dataset.pick, 10);
+
+      if (shuffling) {
+        resultEl.textContent = 'wait for shuffle to finish';
+        return;
+      }
+      if (choicesDiv.style.display !== 'flex') return;
+
+      const betAmount = parseInt(betRange.value, 10);
+      if (betAmount > balance) {
+        resultEl.textContent = 'balance error';
+        return;
+      }
+
+      const glasses = getGlasses();
+      if (pickIndex >= glasses.length) return;
+
+      const chosenGlass = glasses[pickIndex];
+
+      // লিফট অ্যানিমেশন
+      chosenGlass.classList.add('lift');
+
+      // ব্ল্যাক ক্লাস রিমুভ
+      glasses.forEach(g => g.classList.remove('black'));
+
+      // রেজাল্ট দেখানোর জন্য একটু দেরি
+      setTimeout(() => {
+        // মার্বেল আছে কিনা চেক করি
+        const marbleHere = (pickIndex === secretIndex);
+
+        if (marbleHere) {
+          balance += betAmount;
+          resultEl.textContent = '🎉 YOU WIN! +' + betAmount + ' ৳';
+        } else {
+          balance -= betAmount;
+          resultEl.textContent = '💔 YOU LOSE... -' + betAmount + ' ৳';
+        }
+
+        if (balance < 0) balance = 0;
+        updateBalanceUI();
+
+        glasses.forEach(g => g.classList.remove('lift', 'black', 'move'));
+
+        choicesDiv.style.display = 'none';
+
+        // নতুন রাউন্ডের জন্য মার্বেল পজিশন সেট
+        setMarblePosition();
+
+        startBtn.disabled = false;
+        shuffling = false;
+      }, 450);
+    }
+
+    choiceBtns.forEach(btn => btn.addEventListener('click', onPick));
+
+    betRange.addEventListener('change', function() {
+      let val = parseInt(this.value, 10);
+      if (val < 5) this.value = 5;
+      if (val > 10000) this.value = 10000;
+      betValue.textContent = this.value;
+    });
+
+    updateBalanceUI();
+  })();
+</script>
+</body>
+</html>
